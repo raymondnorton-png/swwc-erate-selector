@@ -1253,7 +1253,7 @@ function changeDistrict() {
   districtName    = '';
   districtSheetId = '';
   // Reset custom products
-  ALL_TYPES.forEach(type => {
+  ALL_TYPES.filter(t => DATA[t]).forEach(type => {
     customProducts[type] = [];
     DATA[type].products = DATA[type].products.filter(p => !p.shared);
     renderCustomList(type);
@@ -1286,8 +1286,8 @@ async function fetchSharedLibrary() {
     const json = await res.json();
     if (!json.ok) throw new Error(json.error);
 
-    // Clear previously loaded shared products
-    ALL_TYPES.forEach(type => {
+    // Clear previously loaded shared products (skip 'history' which has no DATA entry)
+    ALL_TYPES.filter(t => DATA[t]).forEach(type => {
       DATA[type].products = DATA[type].products.filter(p => !p.shared);
       customProducts[type] = [];
     });
