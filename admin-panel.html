@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SWWC E-Rate — Library Admin</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #ffffff; --bg-secondary: #f5f5f4; --bg-tertiary: #eeece8;
+  --text: #1a1a1a; --text-secondary: #6b6b6b; --text-tertiary: #9a9a9a;
+  --border: rgba(0,0,0,0.12); --border-secondary: rgba(0,0,0,0.22);
+  --blue: #185FA5; --blue-dark: #0c447c; --blue-light: #e6f1fb;
+  --green: #27500a; --green-light: #eaf3de; --green-border: #c0dd97;
+  --red: #a32d2d; --red-light: #fcebeb; --red-border: #f5b8b8;
+  --amber: #ba7517; --amber-light: #faeeda;
+  --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1c; --bg-secondary: #252525; --bg-tertiary: #2e2e2e;
+    --text: #e8e8e6; --text-secondary: #a0a09c; --text-tertiary: #6a6a66;
+    --border: rgba(255,255,255,0.1); --border-secondary: rgba(255,255,255,0.18);
+    --blue: #378add; --blue-dark: #85b7eb; --blue-light: #0c2a45;
+    --green: #c0dd97; --green-light: #162808; --green-border: #3b6d11;
+    --red: #f09595; --red-light: #2d1010; --red-border: #7a2020;
+    --amber: #fac775; --amber-light: #2d1f06;
+  }
+}
+
+html { font-size: 16px; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg-tertiary); color: var(--text); min-height: 100vh; }
+
+/* ── Login ── */
+.login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+.login-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 2.5rem 2rem; width: 100%; max-width: 380px; text-align: center; }
+.login-card .logo { width: 44px; height: 44px; background: var(--blue); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px; margin: 0 auto 1.25rem; }
+.login-card h1 { font-size: 19px; font-weight: 500; margin-bottom: .3rem; }
+.login-card p  { font-size: 13px; color: var(--text-secondary); margin-bottom: 1.5rem; }
+.login-input  { width: 100%; padding: 10px 14px; font-size: 14px; border: 0.5px solid var(--border-secondary); border-radius: var(--radius-md); background: var(--bg); color: var(--text); outline: none; margin-bottom: 10px; }
+.login-input:focus { border-color: var(--blue); }
+.login-btn    { width: 100%; padding: 10px; background: var(--blue); color: #fff; border: none; border-radius: var(--radius-md); font-size: 14px; font-weight: 500; cursor: pointer; }
+.login-btn:hover { background: var(--blue-dark); }
+.login-msg    { font-size: 13px; margin-top: 10px; color: var(--red); min-height: 20px; }
+
+/* ── App shell ── */
+.app-header { background: var(--bg); border-bottom: 0.5px solid var(--border); padding: .85rem 2rem; display: flex; align-items: center; gap: 12px; }
+.app-header .logo { width: 30px; height: 30px; background: var(--blue); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; }
+.app-header h1 { font-size: 16px; font-weight: 500; flex: 1; }
+.app-header .logout-btn { font-size: 13px; padding: 6px 14px; border: 0.5px solid var(--border-secondary); border-radius: var(--radius-md); background: var(--bg); color: var(--text-secondary); cursor: pointer; }
+.app-header .logout-btn:hover { background: var(--bg-secondary); }
+
+.container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 8px; }
+.section-title  { font-size: 18px; font-weight: 500; }
+.refresh-btn    { font-size: 13px; padding: 7px 14px; border: 0.5px solid var(--border-secondary); border-radius: var(--radius-md); background: var(--bg); color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 5px; }
+.refresh-btn:hover { background: var(--bg-secondary); }
+
+.badge { font-size: 11px; padding: 2px 9px; border-radius: var(--radius-sm); font-weight: 500; }
+.badge-pending  { background: var(--amber-light); color: var(--amber); }
+.badge-approved { background: var(--green-light); color: var(--green); }
+.badge-rejected { background: var(--bg-secondary); color: var(--text-tertiary); }
+
+.tab-bar { display: flex; border: 0.5px solid var(--border-secondary); border-radius: var(--radius-md); overflow: hidden; width: fit-content; margin-bottom: 1.5rem; background: var(--bg); }
+.tab { padding: 8px 20px; font-size: 13px; font-weight: 500; cursor: pointer; background: transparent; color: var(--text-secondary); border: none; border-right: 0.5px solid var(--border-secondary); transition: all .15s; }
+.tab:last-child { border-right: none; }
+.tab.active { background: var(--blue); color: #fff; }
+
+.card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 12px; overflow: hidden; }
+.card-body { padding: 1rem 1.25rem; }
+
+.prod-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.prod-name  { font-size: 15px; font-weight: 500; color: var(--text); }
+.prod-meta  { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+.prod-desc  { font-size: 13px; color: var(--text-secondary); margin: 8px 0; line-height: 1.5; }
+.tag-row    { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0; }
+.tag        { font-size: 11px; padding: 2px 8px; border-radius: var(--radius-sm); background: var(--bg-secondary); color: var(--text-secondary); border: 0.5px solid var(--border); }
+
+.action-row { display: flex; gap: 8px; padding: .75rem 1.25rem; border-top: 0.5px solid var(--border); background: var(--bg-secondary); }
+.btn-approve { padding: 7px 16px; background: var(--green-light); color: var(--green); border: 0.5px solid var(--green-border); border-radius: var(--radius-md); font-size: 13px; font-weight: 500; cursor: pointer; }
+.btn-approve:hover { background: #d4ebbc; }
+.btn-reject  { padding: 7px 16px; background: var(--red-light); color: var(--red); border: 0.5px solid var(--red-border); border-radius: var(--radius-md); font-size: 13px; font-weight: 500; cursor: pointer; }
+.btn-reject:hover  { background: #f8d5d5; }
+.action-msg  { font-size: 13px; color: var(--text-secondary); padding: 7px 0; }
+
+.empty-state { padding: 3rem; text-align: center; color: var(--text-secondary); font-size: 14px; border: 0.5px dashed var(--border-secondary); border-radius: var(--radius-lg); }
+
+.master-item { display: flex; align-items: center; justify-content: space-between; padding: .75rem 1.25rem; border-bottom: 0.5px solid var(--border); font-size: 13px; }
+.master-item:last-child { border-bottom: none; }
+.master-item .name { font-weight: 500; color: var(--text); }
+.master-item .meta { color: var(--text-secondary); font-size: 12px; }
+.btn-remove { font-size: 11px; padding: 3px 9px; border: 0.5px solid var(--border-secondary); border-radius: var(--radius-sm); background: var(--bg); color: var(--text-secondary); cursor: pointer; }
+.btn-remove:hover { background: var(--red-light); color: var(--red); border-color: var(--red-border); }
+
+.divider { border: none; border-top: 0.5px solid var(--border); margin: 2rem 0; }
+.loading { color: var(--text-tertiary); font-size: 14px; padding: 1.5rem 0; }
+
+@media (max-width: 600px) {
+  .container { padding: 1rem; }
+  .app-header { padding: .75rem 1rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- Login screen -->
+<div id="login-screen" class="login-wrap">
+  <div class="login-card">
+    <div class="logo"><i class="ti ti-shield-lock" aria-hidden="true"></i></div>
+    <h1>SWWC E-Rate Admin</h1>
+    <p>Sign in to review and approve product library submissions.</p>
+    <input class="login-input" id="admin-password" type="password" placeholder="Admin password"
+      onkeydown="if(event.key==='Enter') login()">
+    <button class="login-btn" onclick="login()">Sign in</button>
+    <div class="login-msg" id="login-msg"></div>
+  </div>
+</div>
+
+<!-- Admin app -->
+<div id="admin-app" style="display:none">
+  <header class="app-header">
+    <div class="logo"><i class="ti ti-shield-check" aria-hidden="true"></i></div>
+    <h1>SWWC E-Rate — Library Admin</h1>
+    <button class="logout-btn" onclick="logout()"><i class="ti ti-logout" style="font-size:14px;margin-right:4px"></i>Sign out</button>
+  </header>
+
+  <div class="container">
+
+    <div class="tab-bar">
+      <button class="tab active" id="tab-pending" onclick="switchAdminTab('pending')">
+        <i class="ti ti-clock" style="font-size:14px;margin-right:5px"></i>Pending review <span id="pending-badge" class="badge badge-pending" style="margin-left:5px"></span>
+      </button>
+      <button class="tab" id="tab-master" onclick="switchAdminTab('master')">
+        <i class="ti ti-books" style="font-size:14px;margin-right:5px"></i>Master library
+      </button>
+    </div>
+
+    <!-- Pending submissions -->
+    <div id="pane-pending">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Pending submissions</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-top:3px">Review product suggestions from tech coordinators. Approved items are added to the master library and become visible to all districts.</div>
+        </div>
+        <button class="refresh-btn" onclick="loadPending()"><i class="ti ti-refresh"></i> Refresh</button>
+      </div>
+      <div id="pending-list"><div class="loading">Loading…</div></div>
+    </div>
+
+    <!-- Master library -->
+    <div id="pane-master" style="display:none">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Master library</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-top:3px">All approved products visible to every district when they load the tool.</div>
+        </div>
+        <button class="refresh-btn" onclick="loadMaster()"><i class="ti ti-refresh"></i> Refresh</button>
+      </div>
+      <div id="master-list"><div class="loading">Loading…</div></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── Configuration ─────────────────────────────────────────────
+// Same Apps Script URL as the main tool
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzQ2E0kK_t4bSUqV_wwk9951xEMAU6B_rPnOoeednYquLIqRPx2Z49Lym-n_Gaux3bx/exec';
+
+// Admin password — change this to your own secure password
+// For a more robust solution, store the password hash in the Apps Script instead
+const ADMIN_PASSWORD = 'swwc-erate-admin-2027';
+
+const CATEGORY_LABELS = {
+  ap:  'Wireless APs', sw: 'Switches', fw: 'Firewall',
+  ups: 'UPS', lic: 'Licensing', acc: 'Racks & Components'
+};
+
+// ── Auth ──────────────────────────────────────────────────────
+function login() {
+  const pw  = document.getElementById('admin-password').value;
+  const msg = document.getElementById('login-msg');
+  if (pw === ADMIN_PASSWORD) {
+    sessionStorage.setItem('adminAuth', '1');
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-app').style.display = '';
+    loadPending();
+  } else {
+    msg.textContent = 'Incorrect password.';
+    document.getElementById('admin-password').value = '';
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('adminAuth');
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('admin-app').style.display = 'none';
+  document.getElementById('admin-password').value = '';
+  document.getElementById('login-msg').textContent = '';
+}
+
+// Check if already authenticated this session
+if (sessionStorage.getItem('adminAuth') === '1') {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('admin-app').style.display = '';
+}
+
+// ── Tab switching ─────────────────────────────────────────────
+function switchAdminTab(t) {
+  ['pending','master'].forEach(tab => {
+    document.getElementById('tab-' + tab).className = 'tab' + (tab === t ? ' active' : '');
+    document.getElementById('pane-' + tab).style.display = tab === t ? '' : 'none';
+  });
+  if (t === 'master') loadMaster();
+}
+
+// ── Load pending submissions ──────────────────────────────────
+async function loadPending() {
+  const el = document.getElementById('pending-list');
+  el.innerHTML = '<div class="loading">Loading pending submissions…</div>';
+
+  if (APPS_SCRIPT_URL === 'YOUR_MASTER_APPS_SCRIPT_URL_HERE') {
+    el.innerHTML = '<div class="empty-state">⚙ Apps Script URL not configured yet.<br>Add your deployed URL to both the admin panel and the main tool.</div>';
+    return;
+  }
+
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'getPending' })
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+
+    const badge = document.getElementById('pending-badge');
+    badge.textContent = json.pending.length || '';
+    badge.style.display = json.pending.length ? '' : 'none';
+
+    if (!json.pending.length) {
+      el.innerHTML = '<div class="empty-state">✓ No pending submissions right now.</div>';
+      return;
+    }
+
+    el.innerHTML = json.pending.map(p => renderPendingCard(p)).join('');
+  } catch(err) {
+    el.innerHTML = `<div class="empty-state" style="color:var(--red)">⚠ Could not load pending submissions: ${err.message}</div>`;
+  }
+}
+
+function renderPendingCard(p) {
+  const catLabel = CATEGORY_LABELS[p.type] || p.type;
+  const tags     = Array.isArray(p.tags) ? p.tags : [];
+  const tagHtml  = tags.map(t => `<span class="tag">${t}</span>`).join('') || '<span style="color:var(--text-tertiary);font-size:12px">No tags selected</span>';
+  const submitted = p.submittedAt ? new Date(p.submittedAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '';
+  return `
+    <div class="card" id="card-${p.id}">
+      <div class="card-body">
+        <div class="prod-header">
+          <div>
+            <div class="prod-name">${p.name}</div>
+            <div class="prod-meta">
+              ${p.brand ? `<strong>${p.brand}</strong> · ` : ''}
+              Category: <strong>${catLabel}</strong>
+              ${p.districtName ? ` · Submitted by: <strong>${p.districtName}</strong>` : ''}
+              ${p.added_by ? ` (${p.added_by})` : ''}
+              ${submitted ? ` · ${submitted}` : ''}
+            </div>
+          </div>
+          <span class="badge badge-pending">Pending</span>
+        </div>
+        ${p.desc ? `<div class="prod-desc">${p.desc}</div>` : ''}
+        <div class="tag-row">${tagHtml}</div>
+      </div>
+      <div class="action-row">
+        <button class="btn-approve" onclick="approve('${p.id}')">
+          <i class="ti ti-check" style="font-size:13px;margin-right:4px"></i>Approve &amp; add to library
+        </button>
+        <button class="btn-reject" onclick="reject('${p.id}')">
+          <i class="ti ti-x" style="font-size:13px;margin-right:4px"></i>Reject
+        </button>
+        <span class="action-msg" id="action-msg-${p.id}"></span>
+      </div>
+    </div>`;
+}
+
+// ── Approve ───────────────────────────────────────────────────
+async function approve(id) {
+  const msg = document.getElementById('action-msg-' + id);
+  msg.textContent = 'Approving…';
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'approvePending', id })
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+    const card = document.getElementById('card-' + id);
+    card.style.opacity = '.5';
+    card.style.pointerEvents = 'none';
+    card.querySelector('.badge').className = 'badge badge-approved';
+    card.querySelector('.badge').textContent = 'Approved';
+    card.querySelector('.action-row').innerHTML = `<span style="font-size:13px;color:var(--green)">✓ Added to master library</span>`;
+    // Update badge count
+    loadPending();
+  } catch(err) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Error: ' + err.message;
+  }
+}
+
+// ── Reject ────────────────────────────────────────────────────
+async function reject(id) {
+  if (!confirm('Reject this submission? It will be marked as rejected and removed from the queue.')) return;
+  const msg = document.getElementById('action-msg-' + id);
+  msg.textContent = 'Rejecting…';
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'rejectPending', id })
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+    const card = document.getElementById('card-' + id);
+    card.style.opacity = '.4';
+    card.style.pointerEvents = 'none';
+    card.querySelector('.badge').className = 'badge badge-rejected';
+    card.querySelector('.badge').textContent = 'Rejected';
+    card.querySelector('.action-row').innerHTML = `<span style="font-size:13px;color:var(--text-tertiary)">Submission rejected.</span>`;
+    loadPending();
+  } catch(err) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Error: ' + err.message;
+  }
+}
+
+// ── Load master library ───────────────────────────────────────
+async function loadMaster() {
+  const el = document.getElementById('master-list');
+  el.innerHTML = '<div class="loading">Loading master library…</div>';
+
+  if (APPS_SCRIPT_URL === 'YOUR_MASTER_APPS_SCRIPT_URL_HERE') {
+    el.innerHTML = '<div class="empty-state">⚙ Apps Script URL not configured yet.</div>';
+    return;
+  }
+
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL + '?action=getMasterLibrary');
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+
+    if (!json.products.length) {
+      el.innerHTML = '<div class="empty-state">The master library is empty. Approved submissions will appear here.</div>';
+      return;
+    }
+
+    // Group by category
+    const grouped = {};
+    json.products.forEach(p => {
+      const cat = CATEGORY_LABELS[p.type] || p.type || 'Other';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(p);
+    });
+
+    el.innerHTML = Object.entries(grouped).map(([cat, prods]) => `
+      <div style="margin-bottom:1.5rem">
+        <div style="font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);margin-bottom:8px">${cat} — ${prods.length} product${prods.length!==1?'s':''}</div>
+        <div class="card" style="overflow:hidden">
+          ${prods.map((p, i) => `
+            <div class="master-item">
+              <div>
+                <div class="name">${p.name}</div>
+                <div class="meta">${p.brand || ''}${p.submitted_by_district ? ` · from ${p.submitted_by_district}` : ''}${p.approvedAt ? ` · approved ${new Date(p.approvedAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}` : ''}</div>
+              </div>
+              <button class="btn-remove" onclick="removeMasterItem('${p.name}','${p.type}',this)">Remove</button>
+            </div>`).join('')}
+        </div>
+      </div>`).join('');
+  } catch(err) {
+    el.innerHTML = `<div class="empty-state" style="color:var(--red)">⚠ Could not load master library: ${err.message}</div>`;
+  }
+}
+
+async function removeMasterItem(name, type, btn) {
+  if (!confirm(`Remove "${name}" from the master library? It will no longer appear in the tool for any district.`)) return;
+  btn.textContent = 'Removing…';
+  btn.disabled    = true;
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'removeMasterItem', name, type })
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+    loadMaster();
+  } catch(err) {
+    btn.textContent = 'Error';
+    alert('Could not remove: ' + err.message);
+  }
+}
+
+// Auto-load if already authenticated
+if (sessionStorage.getItem('adminAuth') === '1') {
+  loadPending();
+}
+</script>
+</body>
+</html>
