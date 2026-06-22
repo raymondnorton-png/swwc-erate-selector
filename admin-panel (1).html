@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SWWC E-Rate — Library Admin</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f5f5f4;
+    --bg-tertiary: #eeece8;
+    --text: #1a1a1a;
+    --text-secondary: #6b6b6b;
+    --text-tertiary: #9a9a9a;
+    --border: rgba(0,0,0,0.12);
+    --border-secondary: rgba(0,0,0,0.22);
+    --blue: #185FA5;
+    --blue-dark: #0c447c;
+    --blue-light: #e6f1fb;
+    --border-info: #b5d4f4;
+    --green: #27500a;
+    --green-light: #eaf3de;
+    --green-border: #c0dd97;
+    --red: #a32d2d;
+    --red-light: #fcebeb;
+    --amber: #ba7517;
+    --amber-light: #faeeda;
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg-tertiary);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* ── Login ── */
+  .login-wrap {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+  .login-card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem 2rem;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+  }
+  .logo {
+    width: 44px; height: 44px;
+    background: var(--blue);
+    border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 20px;
+    margin: 0 auto 1.25rem;
+  }
+  .login-card h1 { font-size: 19px; font-weight: 500; margin-bottom: .3rem; }
+  .login-card p  { font-size: 13px; color: var(--text-secondary); margin-bottom: 1.5rem; }
+  .login-input {
+    width: 100%;
+    padding: 10px 13px;
+    font-size: 14px;
+    border: 0.5px solid var(--border-secondary);
+    border-radius: var(--radius-md);
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    margin-bottom: 10px;
+    text-align: center;
+    letter-spacing: .08em;
+    transition: border-color .15s;
+  }
+  .login-input:focus { border-color: var(--blue); }
+  .login-btn {
+    width: 100%;
+    padding: 10px;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .login-btn:hover { background: var(--blue-dark); }
+  .login-msg { font-size: 13px; margin-top: 8px; min-height: 18px; color: var(--red); }
+
+  /* ── Header ── */
+  .page-header {
+    background: var(--bg);
+    border-bottom: 0.5px solid var(--border);
+    padding: .85rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .page-header .logo { margin: 0; width: 32px; height: 32px; font-size: 15px; flex-shrink: 0; }
+  .page-header h1 { font-size: 16px; font-weight: 500; flex: 1; }
+  .signout-btn {
+    font-size: 13px;
+    padding: 6px 14px;
+    border: 0.5px solid var(--border-secondary);
+    border-radius: var(--radius-md);
+    background: var(--bg);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .signout-btn:hover { background: var(--bg-secondary); }
+
+  /* ── Layout ── */
+  .container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  /* ── Tabs ── */
+  .tab-bar {
+    display: flex;
+    border: 0.5px solid var(--border-secondary);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    width: fit-content;
+    margin-bottom: 1.75rem;
+    background: var(--bg);
+  }
+  .tab {
+    padding: 9px 22px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-secondary);
+    border: none;
+    border-right: 0.5px solid var(--border-secondary);
+    display: flex; align-items: center; gap: 7px;
+    transition: all .15s;
+    position: relative;
+  }
+  .tab:last-child { border-right: none; }
+  .tab.active { background: var(--blue); color: #fff; }
+  .tab i { font-size: 16px; }
+  .tab .badge-count {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: #fff;
+    color: var(--blue);
+    min-width: 18px;
+    text-align: center;
+    display: none;
+  }
+  .tab.active .badge-count { display: inline-block; }
+  .tab:not(.active) .badge-count { display: inline-block; background: var(--red); color: #fff; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .card-title {
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: .25rem;
+  }
+  .card-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 1.25rem;
+  }
+
+  /* ── Submission cards ── */
+  .sub-card {
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.2rem;
+    margin-bottom: 10px;
+    background: var(--bg);
+  }
+  .sub-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+    gap: 10px;
+  }
+  .sub-name { font-size: 15px; font-weight: 500; color: var(--text); }
+  .sub-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .sub-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; line-height: 1.5; }
+  .badge {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .badge-pending  { background: var(--amber-light); color: var(--amber); }
+  .badge-approved { background: var(--green-light); color: var(--green); }
+  .badge-rejected { background: var(--bg-secondary); color: var(--text-tertiary); }
+  .tag-row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+  .tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    background: var(--blue-light);
+    color: var(--blue-dark);
+    line-height: 1.6;
+  }
+  .action-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 0.5px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .btn-approve {
+    padding: 6px 16px;
+    background: var(--green-light);
+    color: var(--green);
+    border: 0.5px solid var(--green-border);
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .btn-approve:hover { background: #d5eab8; }
+  .btn-reject {
+    padding: 6px 16px;
+    background: var(--red-light);
+    color: var(--red);
+    border: 0.5px solid #e8b4b4;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .btn-reject:hover { background: #f5d5d5; }
+  .action-msg { font-size: 12px; color: var(--text-secondary); }
+
+  /* ── Master library items ── */
+  .master-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 0.5px solid var(--border);
+    gap: 12px;
+  }
+  .master-item:last-child { border-bottom: none; }
+  .master-item .name { font-size: 14px; font-weight: 500; color: var(--text); }
+  .master-item .meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .btn-remove {
+    font-size: 12px;
+    padding: 4px 12px;
+    border: 0.5px solid var(--border-secondary);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--text-secondary);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .btn-remove:hover { background: var(--red-light); color: var(--red); border-color: #e8b4b4; }
+
+  /* ── Empty state ── */
+  .empty-state {
+    padding: 2.5rem;
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 14px;
+    border: 0.5px dashed var(--border-secondary);
+    border-radius: var(--radius-lg);
+  }
+
+  /* ── Refresh btn ── */
+  .refresh-btn {
+    font-size: 12px;
+    padding: 5px 12px;
+    border: 0.5px solid var(--border-secondary);
+    border-radius: var(--radius-md);
+    background: var(--bg);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .refresh-btn:hover { background: var(--bg-secondary); }
+
+  .section-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Login screen -->
+<div id="login-screen" class="login-wrap">
+  <div class="login-card">
+    <div class="logo"><i class="ti ti-shield-lock"></i></div>
+    <h1>SWWC E-Rate — Library Admin</h1>
+    <p>Sign in to review product submissions and manage the master library.</p>
+    <input class="login-input" id="pw-input" type="password" placeholder="Admin password"
+      onkeydown="if(event.key==='Enter') login()">
+    <button class="login-btn" onclick="login()">Sign in</button>
+    <div class="login-msg" id="login-msg"></div>
+  </div>
+</div>
+
+<!-- Admin panel -->
+<div id="admin-panel" style="display:none">
+  <header class="page-header">
+    <div class="logo"><i class="ti ti-shield-lock"></i></div>
+    <h1>SWWC E-Rate — Library Admin</h1>
+    <button class="signout-btn" onclick="signOut()">
+      <i class="ti ti-logout" style="font-size:14px"></i> Sign out
+    </button>
+  </header>
+
+  <div class="container">
+    <div class="tab-bar">
+      <button class="tab active" id="tab-pending" onclick="switchTab('pending')">
+        <i class="ti ti-clock"></i> Pending review
+        <span class="badge-count" id="pending-count">0</span>
+      </button>
+      <button class="tab" id="tab-master" onclick="switchTab('master')">
+        <i class="ti ti-books"></i> Master library
+      </button>
+    </div>
+
+    <!-- Pending pane -->
+    <div id="pane-pending">
+      <div class="card">
+        <div class="section-row">
+          <div>
+            <div class="card-title">Pending submissions</div>
+            <div class="card-sub">Review product suggestions from tech coordinators. Approved items are added to the master library and become visible to all districts.</div>
+          </div>
+          <button class="refresh-btn" onclick="loadPending()">
+            <i class="ti ti-refresh" style="font-size:13px"></i> Refresh
+          </button>
+        </div>
+        <div id="pending-list">
+          <div class="empty-state">Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Master library pane -->
+    <div id="pane-master" style="display:none">
+      <div class="card">
+        <div class="section-row">
+          <div>
+            <div class="card-title">Master library</div>
+            <div class="card-sub">All approved products visible to every district when they load the tool.</div>
+          </div>
+          <button class="refresh-btn" onclick="loadMaster()">
+            <i class="ti ti-refresh" style="font-size:13px"></i> Refresh
+          </button>
+        </div>
+        <div id="master-list">
+          <div class="empty-state">Loading…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────
+// After deploying the new Apps Script, paste the URL here:
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzQ2E0kK_t4bSUqV_wwk9951xEMAU6B_rPnOoeednYquLIqRPx2Z49Lym-n_Gaux3bx/exec';
+const ADMIN_PASSWORD  = 'swwc-erate-admin-2027';
+
+const TYPE_LABELS = {
+  ap:'Wireless APs', sw:'Switches', fw:'Firewall',
+  ups:'UPS', lic:'Licensing', acc:'Racks & Components'
+};
+
+// ── Auth ──────────────────────────────────────────────────────
+function login() {
+  const pw  = document.getElementById('pw-input').value;
+  const msg = document.getElementById('login-msg');
+  if (pw === ADMIN_PASSWORD) {
+    sessionStorage.setItem('adminAuth', '1');
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-panel').style.display  = '';
+    loadPending();
+  } else {
+    msg.textContent = 'Incorrect password.';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+function signOut() {
+  sessionStorage.removeItem('adminAuth');
+  document.getElementById('login-screen').style.display = '';
+  document.getElementById('admin-panel').style.display  = 'none';
+  document.getElementById('pw-input').value = '';
+}
+
+// ── Tabs ──────────────────────────────────────────────────────
+function switchTab(t) {
+  ['pending','master'].forEach(id => {
+    document.getElementById('tab-' + id).className   = 'tab' + (id === t ? ' active' : '');
+    document.getElementById('pane-' + id).style.display = id === t ? '' : 'none';
+  });
+  if (t === 'master') loadMaster();
+}
+
+// ── Load pending ──────────────────────────────────────────────
+async function loadPending() {
+  const el = document.getElementById('pending-list');
+  el.innerHTML = '<div class="empty-state">Loading…</div>';
+
+  if (APPS_SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbzQ2E0kK_t4bSUqV_wwk9951xEMAU6B_rPnOoeednYquLIqRPx2Z49Lym-n_Gaux3bx/exec') {
+    el.innerHTML = '<div class="empty-state" style="color:var(--amber)">⚠ Paste your Apps Script URL into admin-panel.html first.</div>';
+    return;
+  }
+
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL + '?action=getPending');
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+
+    const countEl = document.getElementById('pending-count');
+    countEl.textContent = json.pending.length;
+    countEl.style.display = json.pending.length > 0 ? 'inline-block' : 'none';
+
+    if (!json.pending.length) {
+      el.innerHTML = '<div class="empty-state">✓ No pending submissions right now.</div>';
+      return;
+    }
+
+    el.innerHTML = json.pending.map(p => renderPendingCard(p)).join('');
+  } catch(err) {
+    el.innerHTML = `<div class="empty-state" style="color:var(--red)">⚠ Could not load submissions: ${err.message}</div>`;
+  }
+}
+
+function renderPendingCard(p) {
+  const submitted = p.submittedAt ? new Date(p.submittedAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}) : '';
+  const typeLabel = TYPE_LABELS[p.type] || p.type || '—';
+  const tagHtml   = (p.tags || []).map(t => `<span class="tag">${t}</span>`).join('');
+
+  return `<div class="sub-card" id="card-${p.id}">
+    <div class="sub-head">
+      <div>
+        <div class="sub-name">${p.name || '—'}</div>
+        <div class="sub-meta">
+          ${p.brand ? `<strong>${p.brand}</strong> · ` : ''}
+          Category: <strong>${typeLabel}</strong>
+          ${p.districtName ? ` · Submitted by: <strong>${p.districtName}</strong>` : ''}
+          ${p.added_by ? ` (${p.added_by})` : ''}
+          ${submitted ? ` · ${submitted}` : ''}
+        </div>
+      </div>
+      <span class="badge badge-pending">Pending</span>
+    </div>
+    ${p.desc ? `<div class="sub-desc">${p.desc}</div>` : ''}
+    ${tagHtml ? `<div class="tag-row">${tagHtml}</div>` : ''}
+    <div class="action-row">
+      <button class="btn-approve" onclick="approve('${p.id}')">
+        <i class="ti ti-check" style="font-size:13px"></i> Approve &amp; add to library
+      </button>
+      <button class="btn-reject" onclick="reject('${p.id}')">
+        <i class="ti ti-x" style="font-size:13px"></i> Reject
+      </button>
+      <span class="action-msg" id="action-msg-${p.id}"></span>
+    </div>
+  </div>`;
+}
+
+// ── Approve ───────────────────────────────────────────────────
+async function approve(id) {
+  const msg = document.getElementById('action-msg-' + id);
+  msg.textContent = 'Approving…';
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'approvePending', id })
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+
+    const card = document.getElementById('card-' + id);
+    card.style.opacity = '.5';
+    card.style.pointerEvents = 'none';
+    card.querySelector('.badge').className = 'badge badge-approved';
+    card.querySelector('.badge').textContent = 'Approved';
+    card.querySelector('.action-row').innerHTML = `<span style="font-size:13px;color:var(--green)">✓ Added to master library</span>`;
+
+    // Update badge count
+    const countEl = document.getElementById('pending-count');
+    const cur = parseInt(countEl.textContent) || 0;
+    if (cur > 0) countEl.textContent = cur - 1;
+  } catch(err) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Error: ' + err.message;
+  }
+}
+
+// ── Reject ────────────────────────────────────────────────────
+async function reject(id) {
+  if (!confirm('Reject this submission? It will be marked as rejected and removed from the queue.')) return;
+  const msg = document.getElementById('action-msg-' + id);
+  msg.textContent = 'Rejecting…';
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'rejectPending', id })
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+
+    const card = document.getElementById('card-' + id);
+    card.style.opacity = '.5';
+    card.style.pointerEvents = 'none';
+    card.querySelector('.badge').className = 'badge badge-rejected';
+    card.querySelector('.badge').textContent = 'Rejected';
+    card.querySelector('.action-row').innerHTML = `<span style="font-size:13px;color:var(--text-tertiary)">Rejected</span>`;
+
+    const countEl = document.getElementById('pending-count');
+    const cur = parseInt(countEl.textContent) || 0;
+    if (cur > 0) countEl.textContent = cur - 1;
+  } catch(err) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Error: ' + err.message;
+  }
+}
+
+// ── Master library ────────────────────────────────────────────
+async function loadMaster() {
+  const el = document.getElementById('master-list');
+  el.innerHTML = '<div class="empty-state">Loading…</div>';
+
+  if (APPS_SCRIPT_URL === 'https://script.google.com/macros/s/AKfycbzQ2E0kK_t4bSUqV_wwk9951xEMAU6B_rPnOoeednYquLIqRPx2Z49Lym-n_Gaux3bx/exec') {
+    el.innerHTML = '<div class="empty-state" style="color:var(--amber)">⚠ Paste your Apps Script URL into admin-panel.html first.</div>';
+    return;
+  }
+
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL + '?action=getMasterLibrary');
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+
+    if (!json.products.length) {
+      el.innerHTML = '<div class="empty-state">The master library is empty. Approved submissions will appear here.</div>';
+      return;
+    }
+
+    // Group by type
+    const grouped = {};
+    json.products.forEach(p => {
+      const label = TYPE_LABELS[p.type] || p.type || 'Other';
+      if (!grouped[label]) grouped[label] = [];
+      grouped[label].push(p);
+    });
+
+    el.innerHTML = Object.entries(grouped).map(([label, prods]) => `
+      <div style="margin-bottom:1.5rem">
+        <div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);margin-bottom:8px">${label} — ${prods.length} product${prods.length !== 1 ? 's' : ''}</div>
+        <div style="border:0.5px solid var(--border);border-radius:var(--radius-md);overflow:hidden">
+          ${prods.map(p => `
+            <div class="master-item" style="padding:10px 14px">
+              <div>
+                <div class="name">${p.name}</div>
+                <div class="meta">
+                  ${p.brand || ''}
+                  ${p.submitted_by_district ? ` · from ${p.submitted_by_district}` : ''}
+                  ${p.approvedAt ? ` · approved ${new Date(p.approvedAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}` : ''}
+                </div>
+              </div>
+              <button class="btn-remove" onclick="removeMasterItem('${p.name.replace(/'/g,"\\'")}','${(p.type||'').replace(/'/g,"\\'")}',this)">Remove</button>
+            </div>`).join('')}
+        </div>
+      </div>`).join('');
+  } catch(err) {
+    el.innerHTML = `<div class="empty-state" style="color:var(--red)">⚠ Could not load master library: ${err.message}</div>`;
+  }
+}
+
+async function removeMasterItem(name, type, btn) {
+  if (!confirm(`Remove "${name}" from the master library? It will no longer appear in the tool for any district.`)) return;
+  btn.textContent = 'Removing…';
+  btn.disabled    = true;
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'removeMasterItem', name, type })
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+    loadMaster();
+  } catch(err) {
+    btn.textContent = 'Error';
+    btn.disabled = false;
+    alert('Could not remove: ' + err.message);
+  }
+}
+
+// ── Auto-login if session active ──────────────────────────────
+if (sessionStorage.getItem('adminAuth') === '1') {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('admin-panel').style.display  = '';
+  loadPending();
+}
+</script>
+</body>
+</html>
