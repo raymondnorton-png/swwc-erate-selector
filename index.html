@@ -1459,6 +1459,88 @@ async function submitPendingProduct(prod) {
 }
 
 // ── Fetch approved master library products ───────────────────
+
+// ── Build specs object from tags for approved products ────────
+function buildSpecsFromTags(type, tags) {
+  const specs = {};
+  const has = (t) => tags.some(tag => tag.toLowerCase().includes(t.toLowerCase()));
+
+  if (type === 'sw') {
+    // Port count
+    if (has('48-port')) specs['Ports'] = ['48'];
+    else if (has('24-port')) specs['Ports'] = ['24'];
+    else if (has('12-port')) specs['Ports'] = ['12 or fewer'];
+    // Access port speed
+    const accessPorts = [];
+    if (has('2.5 Gbps multi-rate')) accessPorts.push('2.5G multi-rate');
+    if (has('10 Gbps access')) accessPorts.push('10G');
+    if (has('Standard 1 Gbps')) accessPorts.push('1G');
+    if (accessPorts.length) specs['Access ports'] = accessPorts;
+    // PoE
+    if (has('802.3bt')) specs['PoE'] = ['802.3bt (90W)'];
+    else if (has('802.3at')) specs['PoE'] = ['802.3at (30W)'];
+    else if (has('802.3af')) specs['PoE'] = ['802.3af (15W)'];
+    // Uplinks
+    if (has('25G SFP28')) specs['Uplinks'] = ['25G SFP28'];
+    else if (has('10G SFP+')) specs['Uplinks'] = ['10G SFP+'];
+    else if (has('1G SFP')) specs['Uplinks'] = ['1G SFP'];
+    // Layer
+    if (has('Layer 3')) specs['Routing'] = ['Layer 3'];
+    else if (has('Layer 2')) specs['Routing'] = ['Layer 2'];
+    // Stack
+    if (has('Stackable')) specs['Stack'] = ['Yes'];
+    // Management
+    const mgmt = [];
+    if (has('ExtremeCloud')) mgmt.push('ExtremeCloud IQ');
+    if (has('Meraki')) mgmt.push('Meraki cloud');
+    if (has('Aruba Central')) mgmt.push('Aruba Central');
+    if (has('UniFi')) mgmt.push('UniFi');
+    if (has('Standalone')) mgmt.push('Standalone');
+    if (mgmt.length) specs['Mgmt'] = mgmt;
+    // License
+    if (has('5-year')) specs['License'] = ['5 yr'];
+    else if (has('3-year')) specs['License'] = ['3 yr'];
+  } else if (type === 'ap') {
+    // WiFi standard
+    if (has('Wi-Fi 7')) specs['Wi-Fi'] = ['802.11be (Wi-Fi 7)'];
+    else if (has('Wi-Fi 6E')) specs['Wi-Fi'] = ['802.11ax (Wi-Fi 6E)'];
+    else if (has('Wi-Fi 6')) specs['Wi-Fi'] = ['802.11ax (Wi-Fi 6)'];
+    // Bands
+    if (has('Tri-band')) specs['Radios'] = ['2.4 / 5 / 6 GHz'];
+    else if (has('Dual-band')) specs['Radios'] = ['2.4 / 5 GHz'];
+    // MIMO
+    if (has('4×4')) specs['MIMO'] = ['4×4'];
+    else if (has('2×2')) specs['MIMO'] = ['2×2'];
+    // PoE
+    if (has('802.3bt')) specs['PoE'] = ['802.3bt (90W)'];
+    else if (has('802.3at')) specs['PoE'] = ['802.3at (30W)'];
+    // Management
+    const mgmt = [];
+    if (has('ExtremeCloud')) mgmt.push('ExtremeCloud IQ');
+    if (has('Meraki')) mgmt.push('Meraki cloud');
+    if (has('Aruba Central')) mgmt.push('Aruba Central');
+    if (has('UniFi')) mgmt.push('UniFi');
+    if (mgmt.length) specs['Mgmt'] = mgmt;
+    // License
+    if (has('5-year')) specs['License'] = ['5 yr'];
+    else if (has('3-year')) specs['License'] = ['3 yr'];
+  } else if (type === 'fw') {
+    if (has('NGFW')) specs['Type'] = ['NGFW'];
+    else if (has('UTM')) specs['Type'] = ['UTM'];
+    if (has('10G SFP+')) specs['WAN'] = ['10G SFP+'];
+    if (has('5-year')) specs['License'] = ['5 yr'];
+  } else if (type === 'ups') {
+    const vaMatch = tags.find(t => /\d+\s*VA/i.test(t));
+    if (vaMatch) specs['VA'] = [vaMatch.match(/[\d,]+\s*VA/i)[0]];
+    if (has('Line Interactive')) specs['Type'] = ['Line Interactive'];
+    else if (has('Online double')) specs['Type'] = ['Online double-conversion'];
+    if (has('2U rack')) specs['Form'] = ['2U rack'];
+    if (has('SmartConnect')) specs['Monitoring'] = ['SmartConnect'];
+    else if (has('SNMP')) specs['Monitoring'] = ['SNMP'];
+  }
+  return specs;
+}
+
 async function fetchMasterLibrary() {
   if (APPS_SCRIPT_URL === 'YOUR_MASTER_APPS_SCRIPT_URL_HERE') return;
   try {
@@ -1471,12 +1553,15 @@ async function fetchMasterLibrary() {
     });
     json.products.forEach(p => {
       if (!DATA[p.type]) return;
+      const ptags = Array.isArray(p.tags) ? p.tags : [];
+      // Build specs from tags for visual consistency with built-in products
+      const pspecs = buildSpecsFromTags(p.type, ptags);
       DATA[p.type].products.push({
         name:     p.name,
         brand:    p.brand || '',
         desc:     p.desc  || '',
-        tags:     Array.isArray(p.tags) ? p.tags : [],
-        specs:    {},
+        tags:     ptags,
+        specs:    pspecs,
         approved: true
       });
     });
