@@ -1573,7 +1573,7 @@ async function fetchMasterLibrary() {
         if (typeCount > 0) setLibraryStatus(type, 'ok', typeCount);
       });
     }
-  } catch(e) { /* silent — base library still works */ }
+  } catch(e) { console.warn('fetchMasterLibrary error:', e); }
 }
 
 // ── Delete product from district sheet ───────────────────────
