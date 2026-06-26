@@ -1210,7 +1210,7 @@ function launchApp(newDistrict) {
   document.getElementById('district-screen').style.display = 'none';
   document.getElementById('main-header').style.display = 'flex';
   document.getElementById('district-badge-name').textContent = districtName;
-  fetchMasterLibrary();
+  fetchMasterLibrary(); // runs immediately on connect
 
   if (isNew) {
     // Brand new district — show contact form
@@ -1462,7 +1462,8 @@ async function submitPendingProduct(prod) {
 async function fetchMasterLibrary() {
   if (APPS_SCRIPT_URL === 'YOUR_MASTER_APPS_SCRIPT_URL_HERE') return;
   try {
-    const json = await jsonpFetch(APPS_SCRIPT_URL + '?action=getMasterLibrary');
+    const res  = await fetch(APPS_SCRIPT_URL + '?action=getMasterLibrary');
+    const json = await res.json();
     if (!json.ok) return;
     // Remove previously approved products before re-adding to avoid duplicates
     ALL_TYPES.filter(t => DATA[t]).forEach(type => {
@@ -1724,7 +1725,9 @@ function clearAll(type) {
   document.getElementById(type + '-results').innerHTML = '';
 }
 
-function showResults(type) {
+async function showResults(type) {
+  // Refresh master library before showing results to catch newly approved products
+  await fetchMasterLibrary();
   const s = state[type].selected;
   const reqTags = Object.entries(s).filter(([k,v]) => v==='required').map(([k]) => getOptText(type, k));
   const prefTags = Object.entries(s).filter(([k,v]) => v==='preferred').map(([k]) => getOptText(type, k));
