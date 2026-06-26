@@ -1738,7 +1738,7 @@ function showResults(type) {
     const prefScore = prefTags.length > 0 ? prefHit.length / prefTags.length : 1;
     const total = reqScore * 0.75 + prefScore * 0.25;
     return {...p, reqHit, reqMiss, prefHit, prefMiss, total};
-  }).sort((a, b) => b.total - a.total).slice(0, 3);
+  }).sort((a, b) => b.total - a.total).filter(p => p.total > 0.1);
 
   const res = document.getElementById(type + '-results');
 
@@ -1766,7 +1766,7 @@ function showResults(type) {
   res.innerHTML = `<div class="divider"></div>
     ${summaryHtml}
     <div class="step-label" style="margin-top:1rem">Step 2 — recommendations</div>
-    <div class="section-title" style="margin-bottom:.75rem">Top ${scored.length} matching products</div>
+    <div class="section-title" style="margin-bottom:.75rem">${scored.length} matching product${scored.length!==1?"s":""}</div>
     <div class="legend">
       <div class="legend-item"><div class="legend-dot" style="background:#3b6d11"></div>Required feature matched</div>
       <div class="legend-item"><div class="legend-dot" style="background:#185fa5"></div>Preferred feature matched</div>
