@@ -1210,7 +1210,7 @@ function launchApp(newDistrict) {
   document.getElementById('district-screen').style.display = 'none';
   document.getElementById('main-header').style.display = 'flex';
   document.getElementById('district-badge-name').textContent = districtName;
-  fetchMasterLibrary(); // runs immediately on connect
+  fetchMasterLibrary().catch(()=>{}); // load approved products on connect
 
   if (isNew) {
     // Brand new district — show contact form
@@ -1811,8 +1811,6 @@ function clearAll(type) {
 }
 
 async function showResults(type) {
-  // Refresh master library before showing results to catch newly approved products
-  await fetchMasterLibrary();
   const s = state[type].selected;
   const reqTags = Object.entries(s).filter(([k,v]) => v==='required').map(([k]) => getOptText(type, k));
   const prefTags = Object.entries(s).filter(([k,v]) => v==='preferred').map(([k]) => getOptText(type, k));
