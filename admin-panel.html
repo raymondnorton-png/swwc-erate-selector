@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SWWC E-Rate — Library Admin</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #ffffff; --bg-secondary: #f5f5f4; --bg-tertiary: #eeece8;
+  --text: #1a1a1a; --text-secondary: #6b6b6b; --text-tertiary: #9a9a9a;
+  --border: rgba(0,0,0,0.12); --border-secondary: rgba(0,0,0,0.22);
+  --blue: #185FA5; --blue-dark: #0c447c; --blue-light: #e6f1fb;
+  --green: #27500a; --green-light: #eaf3de; --green-border: #c0dd97;
+  --red: #a32d2d; --red-light: #fcebeb; --red-border: #f5b8b8;
+  --amber: #ba7517; --amber-light: #faeeda;
+  --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1c; --bg-secondary: #252525; --bg-tertiary: #2e2e2e;
+    --text: #e8e8e6; --text-secondary: #a0a09c; --text-tertiary: #6a6a66;
+    --border: rgba(255,255,255,0.1); --border-secondary: rgba(255,255,255,0.18);
+    --blue: #378add; --blue-dark: #85b7eb; --blue-light: #0c2a45;
+    --green: #c0dd97; --green-light: #162808; --green-border: #3b6d11;
+    --red: #f09595; --red-light: #2d1010; --red-border: #7a2020;
+    --amber: #fac775; --amber-light: #2d1f06;
+  }
+}
+
+html { font-size: 16px; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg-tertiary); color: var(--text); min-height: 100vh; }
+
+/* ── Login ── */
+.login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+.login-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 2.5rem 2rem; width: 100%; max-width: 380px; text-align: center; }
+.login-card .logo { width: 44px; height: 44px; background: var(--blue); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px; margin: 0 auto 1.25rem; }
+.login-card h1 { font-size: 19px; font-weight: 500; margin-bottom: .3rem; }
+.login-card p  { font-size: 13px; color: var(--text-secondary); margin-bottom: 1.5rem; }
+.login-input  { width: 100%; padding: 10px 14px; font-size: 14px; border: 0.5px solid var(--border-secondary); border-radius: var(--radius-md); background: var(--bg); color: var(--text); outline: none; margin-bottom: 10px; }
+.login-input:focus { border-color: var(--blue); }
+.login-btn    { width: 100%; padding: 10px; background: var(--blue); color: #fff; border: none; border-radius: var(--radius-md); font-size: 14px; font-weight: 500; cursor: pointer; }
+.login-btn:hover { background: var(--blue-dark); }
+.login-msg    { font-size: 13px; margin-top: 10px; color: var(--red); min-height: 20px; }
+
+/* ── App shell ── */
+.app-header { background: var(--bg); border-bottom: 0.5px solid var(--border); padding: .85rem 2rem; display: flex; align-items: center; gap: 12px; }
+.app-header .logo { width: 30px; height: 30px; background: var(--blue); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; }
+.app-header h1 { font-size: 16px; font-weight: 500; flex: 1; }
+.app-header .logout-btn { font-size: 13px; padding: 6px 14px; border: 0.5px solid var(--border-secondary); border-radius: var(--radius-md); background: var(--bg); color: var(--text-secondary); cursor: pointer; }
+.app-header .logout-btn:hover { background: var(--bg-secondary); }
+
+.container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 8px; }
+.section-title  { font-size: 18px; font-weight: 500; }
+.refresh-btn    { font-size: 13px; padding: 7px 14px; border: 0.5px solid var(--border-secondary); border-radius: var(--radius-md); background: var(--bg); color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 5px; }
+.refresh-btn:hover { background: var(--bg-secondary); }
+
+.badge { font-size: 11px; padding: 2px 9px; border-radius: var(--radius-sm); font-weight: 500; }
+.badge-pending  { background: var(--amber-light); color: var(--amber); }
+.badge-approved { background: var(--green-light); color: var(--green); }
+.badge-rejected { background: var(--bg-secondary); color: var(--text-tertiary); }
+
+.tab-bar { display: flex; border: 0.5px solid var(--border-secondary); border-radius: var(--radius-md); overflow: hidden; width: fit-content; margin-bottom: 1.5rem; background: var(--bg); }
+.tab { padding: 8px 20px; font-size: 13px; font-weight: 500; cursor: pointer; background: transparent; color: var(--text-secondary); border: none; border-right: 0.5px solid var(--border-secondary); transition: all .15s; }
+.tab:last-child { border-right: none; }
+.tab.active { background: var(--blue); color: #fff; }
+
+.card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 12px; overflow: hidden; }
+.card-body { padding: 1rem 1.25rem; }
+
+.prod-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.prod-name  { font-size: 15px; font-weight: 500; color: var(--text); }
+.prod-meta  { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+.prod-desc  { font-size: 13px; color: var(--text-secondary); margin: 8px 0; line-height: 1.5; }
+.tag-row    { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0; }
+.tag        { font-size: 11px; padding: 2px 8px; border-radius: var(--radius-sm); background: var(--bg-secondary); color: var(--text-secondary); border: 0.5px solid var(--border); }
+
+.action-row { display: flex; gap: 8px; padding: .75rem 1.25rem; border-top: 0.5px solid var(--border); background: var(--bg-secondary); }
+.btn-approve { padding: 7px 16px; background: var(--green-light); color: var(--green); border: 0.5px solid var(--green-border); border-radius: var(--radius-md); font-size: 13px; font-weight: 500; cursor: pointer; }
+.btn-approve:hover { background: #d4ebbc; }
+.btn-reject  { padding: 7px 16px; background: var(--red-light); color: var(--red); border: 0.5px solid var(--red-border); border-radius: var(--radius-md); font-size: 13px; font-weight: 500; cursor: pointer; }
+.btn-reject:hover  { background: #f8d5d5; }
+.action-msg  { font-size: 13px; color: var(--text-secondary); padding: 7px 0; }
+
+.empty-state { padding: 3rem; text-align: center; color: var(--text-secondary); font-size: 14px; border: 0.5px dashed var(--border-secondary); border-radius: var(--radius-lg); }
+
+.master-item { display: flex; align-items: center; justify-content: space-between; padding: .75rem 1.25rem; border-bottom: 0.5px solid var(--border); font-size: 13px; }
+.master-item:last-child { border-bottom: none; }
+.master-item .name { font-weight: 500; color: var(--text); }
+.master-item .meta { color: var(--text-secondary); font-size: 12px; }
+.btn-remove { font-size: 11px; padding: 3px 9px; border: 0.5px solid var(--border-secondary); border-radius: var(--radius-sm); background: var(--bg); color: var(--text-secondary); cursor: pointer; }
+.btn-remove:hover { background: var(--red-light); color: var(--red); border-color: var(--red-border); }
+
+.divider { border: none; border-top: 0.5px solid var(--border); margin: 2rem 0; }
+.loading { color: var(--text-tertiary); font-size: 14px; padding: 1.5rem 0; }
+.btn-edit { padding: 7px 16px; background: var(--bg); color: var(--text-secondary); border: 0.5px solid var(--border-secondary); border-radius: var(--radius-md); font-size: 13px; font-weight: 500; cursor: pointer; }
+.btn-edit:hover { background: var(--bg-secondary); }
+.btn-save-edit { padding: 7px 16px; background: var(--blue); color: #fff; border: none; border-radius: var(--radius-md); font-size: 13px; font-weight: 500; cursor: pointer; }
+.btn-save-edit:hover { background: var(--blue-dark); }
+.edit-panel { padding: 1rem 1.25rem; border-top: 0.5px solid var(--border); background: var(--bg); display: none; }
+.edit-panel.open { display: block; }
+.edit-field { margin-bottom: 12px; }
+.edit-field label { font-size: 12px; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 4px; }
+.edit-field input, .edit-field textarea { width: 100%; padding: 7px 10px; font-size: 13px; border: 0.5px solid var(--border-secondary); border-radius: var(--radius-md); background: var(--bg); color: var(--text); outline: none; font-family: inherit; }
+.edit-field input:focus, .edit-field textarea:focus { border-color: var(--blue); }
+.edit-tag { font-size: 12px; padding: 4px 10px; border-radius: var(--radius-sm); cursor: pointer; border: 0.5px solid var(--border); background: var(--bg-secondary); color: var(--text-secondary); user-select: none; display: inline-block; margin: 3px; transition: all .1s; }
+.edit-tag.selected { background: var(--blue-light); border-color: var(--blue); color: var(--blue); }
+
+@media (max-width: 600px) {
+  .container { padding: 1rem; }
+  .app-header { padding: .75rem 1rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- Login screen -->
+<div id="login-screen" class="login-wrap">
+  <div class="login-card">
+    <div class="logo"><i class="ti ti-shield-lock" aria-hidden="true"></i></div>
+    <h1>SWWC E-Rate Admin</h1>
+    <p>Sign in to review and approve product library submissions.</p>
+    <input class="login-input" id="admin-password" type="password" placeholder="Admin password"
+      onkeydown="if(event.key==='Enter') login()">
+    <button class="login-btn" onclick="login()">Sign in</button>
+    <div class="login-msg" id="login-msg"></div>
+  </div>
+</div>
+
+<!-- Admin app -->
+<div id="admin-app" style="display:none">
+  <header class="app-header">
+    <div class="logo"><i class="ti ti-shield-check" aria-hidden="true"></i></div>
+    <h1>SWWC E-Rate — Library Admin</h1>
+    <button class="logout-btn" onclick="logout()"><i class="ti ti-logout" style="font-size:14px;margin-right:4px"></i>Sign out</button>
+  </header>
+
+  <div class="container">
+
+    <div class="tab-bar">
+      <button class="tab active" id="tab-pending" onclick="switchAdminTab('pending')">
+        <i class="ti ti-clock" style="font-size:14px;margin-right:5px"></i>Pending review <span id="pending-badge" class="badge badge-pending" style="margin-left:5px"></span>
+      </button>
+      <button class="tab" id="tab-master" onclick="switchAdminTab('master')">
+        <i class="ti ti-books" style="font-size:14px;margin-right:5px"></i>Master library
+      </button>
+    </div>
+
+    <!-- Pending submissions -->
+    <div id="pane-pending">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Pending submissions</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-top:3px">Review product suggestions from tech coordinators. Approved items are added to the master library and become visible to all districts.</div>
+        </div>
+        <button class="refresh-btn" onclick="loadPending()"><i class="ti ti-refresh"></i> Refresh</button>
+      </div>
+      <div id="pending-list"><div class="loading">Loading…</div></div>
+    </div>
+
+    <!-- Master library -->
+    <div id="pane-master" style="display:none">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Master library</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-top:3px">All approved products visible to every district when they load the tool.</div>
+        </div>
+        <button class="refresh-btn" onclick="loadMaster()"><i class="ti ti-refresh"></i> Refresh</button>
+      </div>
+      <div id="master-list"><div class="loading">Loading…</div></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── Configuration ─────────────────────────────────────────────
+// Same Apps Script URL as the main tool
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzQ7P0SdezPD3rvyNVsjQRVRf6fF6lXQ4FQChoJ-6kcQPmI6fFGUp4isillyQ94BgM4/exec';
+
+// Admin password — change this to your own secure password
+// For a more robust solution, store the password hash in the Apps Script instead
+const ADMIN_PASSWORD = 'swwc-erate-admin-2027';
+
+const CATEGORY_LABELS = {
+  ap:  'Wireless APs', sw: 'Switches', fw: 'Firewall',
+  ups: 'UPS', lic: 'Licensing', acc: 'Racks & Components'
+};
+
+// ── Auth ──────────────────────────────────────────────────────
+function login() {
+  const pw  = document.getElementById('admin-password').value;
+  const msg = document.getElementById('login-msg');
+  if (pw === ADMIN_PASSWORD) {
+    sessionStorage.setItem('adminAuth', '1');
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-app').style.display = '';
+    loadPending();
+  } else {
+    msg.textContent = 'Incorrect password.';
+    document.getElementById('admin-password').value = '';
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('adminAuth');
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('admin-app').style.display = 'none';
+  document.getElementById('admin-password').value = '';
+  document.getElementById('login-msg').textContent = '';
+}
+
+// Check if already authenticated this session
+if (sessionStorage.getItem('adminAuth') === '1') {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('admin-app').style.display = '';
+}
+
+// ── Tab switching ─────────────────────────────────────────────
+function switchAdminTab(t) {
+  ['pending','master'].forEach(tab => {
+    document.getElementById('tab-' + tab).className = 'tab' + (tab === t ? ' active' : '');
+    document.getElementById('pane-' + tab).style.display = tab === t ? '' : 'none';
+  });
+  if (t === 'master') loadMaster();
+}
+
+// ── Load pending submissions ──────────────────────────────────
+async function loadPending() {
+  const el = document.getElementById('pending-list');
+  el.innerHTML = '<div class="loading">Loading pending submissions…</div>';
+
+  if (APPS_SCRIPT_URL === 'YOUR_MASTER_APPS_SCRIPT_URL_HERE') {
+    el.innerHTML = '<div class="empty-state">⚙ Apps Script URL not configured yet.<br>Add your deployed URL to both the admin panel and the main tool.</div>';
+    return;
+  }
+
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'getPending' })
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+
+    const badge = document.getElementById('pending-badge');
+    badge.textContent = json.pending.length || '';
+    badge.style.display = json.pending.length ? '' : 'none';
+
+    if (!json.pending.length) {
+      el.innerHTML = '<div class="empty-state">✓ No pending submissions right now.</div>';
+      return;
+    }
+
+    el.innerHTML = json.pending.map(p => renderPendingCard(p)).join('');
+  } catch(err) {
+    el.innerHTML = `<div class="empty-state" style="color:var(--red)">⚠ Could not load pending submissions: ${err.message}</div>`;
+  }
+}
+
+// All available tags per category
+const ALL_TAGS = {
+  ap:  ['Wi-Fi 7 (802.11be)','Wi-Fi 6E (802.11ax + 6 GHz band)','Wi-Fi 6 (802.11ax, 2.4/5 GHz)','Tri-band (2.4 / 5 / 6 GHz)','Dual-band (2.4 / 5 GHz only)','4×4:4 or higher','2×2:2 minimum','PoE+ 802.3at (30W)','PoE++ 802.3bt (90W)','Multigigabit uplink (2.5–5 Gbps)','Gigabit uplink (1 Gbps)','ExtremeCloud IQ','Aruba Central / on-prem controller','Cisco Meraki cloud','UniFi on-prem controller','SWWC Hosted UniFi controller','Cisco 9800 controller compatible','Cloud or controller — no preference','5-year licensing included','3-year licensing included','1-year licensing included','WPA3-Enterprise','OFDMA / MU-MIMO','Zero Trust / ZTNA','BLE / IoT radio (ZigBee)','Indoor — classrooms / campus','Outdoor weatherproof','High-density venues (120+ concurrent clients)','Standard density (60+ concurrent clients)','Backward compatible with Wi-Fi 5 and earlier','WPA3 required (not optional)'],
+  sw:  ['48-port','24-port','12-port or fewer','PoE++ 802.3bt Type 4 (90W per port)','PoE+ 802.3at Type 2 (30W per port)','PoE 802.3af (15W per port)','2.5 Gbps multi-rate ports','10 Gbps access ports','Standard 1 Gbps access ports only','10G SFP+ uplinks','25G SFP28 uplinks','1G SFP uplinks only','Layer 3 (IP routing)','Layer 2 only','Stackable','LRM capable','Front-to-back airflow','Back-to-front airflow','Redundant / hot-swap PSU','VLAN / QoS / ACL support','ExtremeCloud IQ','Cisco Meraki cloud','Aruba Central','SWWC Hosted UniFi controller','Standalone — no cloud required','5-year licensing included','3-year licensing included','Stack cable included','DAC cable included','10G SFP+ fiber modules included','Power supply included'],
+  fw:  ['Next-Generation Firewall (NGFW)','UTM appliance','Dual 10G SFP+ WAN interfaces','Standard 1G WAN only','IPS (Intrusion Prevention)','Anti-virus / Anti-malware inspection','Web / DNS filtering','Application control','Advanced threat intelligence','SSL VPN remote access','Site-to-site IPsec VPN','High availability (HA) support','FortiManager / FortiAnalyzer','Cisco Meraki cloud','Standalone / on-device','5-year subscription bundle','3-year subscription bundle','VLAN segmentation','Traffic shaping / QoS','Content filtering','Wireless controller integrated'],
+  ups:  ['750 VA','1500 VA','2000–2200 VA','3000 VA','5–6 kVA (enterprise)','Line Interactive','Online double-conversion','2U rack-mount','Tower / rack convertible','Standard sealed lead-acid','Lithium (hot-swappable)','6+ NEMA 5-15R outlets','NEMA 5-20R inlet compatible','6+ receptacles total','SmartConnect cloud monitoring','SNMP / network management card','No network monitoring needed','AVR (automatic voltage regulation)','LCD status display','Hot-swappable batteries','Pure sine wave output','External battery module (EBM) support','Shallow depth (< 22 inches)','External battery module (EBM)','Power distribution module (PPDM)','Rack rails / mounting hardware'],
+  lic:  ['ExtremeCloud IQ (XIQ)','Aruba Central','Cisco Meraki','Cisco DNA / DNAC','Ruckus SmartZone','1-year','2-year','3-year','5-year','XIQ Pilot (XIQ-PIL-S-C)','Standard / base tier','Advanced / premium tier','Wireless access points','Switches','Both APs and switches','Wireless LAN controller','Cloud-based management','On-premise controller included','LRM capable','24/7 TAC support','8×5 NBD hardware replacement','Firmware and security updates'],
+  acc:  ['Enclosed wall-mount cabinet / rack','2U rack cable management panel','DAC cable (direct attach copper)','SFP / SFP+ optical transceiver','SFP56 / 50G module','QSFP to SFP adapter','Switch power supply module','8–16U height','Lockable / secure enclosure','19-inch rack compatible','Wall-mount','Sufficient depth for switches and UPS','10G SFP+ DAC (1m)','25G SFP28 DAC','50G SFP56 DAC (0.65m)','OM3 compatible fiber transceiver','250W','1050W','1600W','1800W','Aruba CX 5420 compatible','Aruba CX 6200/6300/6400 compatible','Extreme 5720-48MW compatible','Universal / no preference']
+};
+
+// Track edits per card
+const editState = {};
+
+function renderPendingCard(p) {
+  const catLabel  = CATEGORY_LABELS[p.type] || p.type;
+  const tags      = Array.isArray(p.tags) ? p.tags : [];
+  const tagHtml   = tags.map(t => `<span class="tag">${t}</span>`).join('') || '<span style="color:var(--text-tertiary);font-size:12px">No tags selected — click Edit to add</span>';
+  const submitted = p.submittedAt ? new Date(p.submittedAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '';
+
+  // Build tag picker for this type
+  const availTags = ALL_TAGS[p.type] || [];
+  const tagPicker = availTags.map(t =>
+    `<span class="edit-tag${tags.includes(t) ? ' selected' : ''}" onclick="toggleEditTag('${p.id}','${t.replace(/'/g,"\\'")}',this)">${t}</span>`
+  ).join('');
+
+  // Store initial edit state
+  editState[p.id] = { name: p.name, brand: p.brand || '', desc: p.desc || '', tags: [...tags] };
+
+  return `
+    <div class="card" id="card-${p.id}">
+      <div class="card-body">
+        <div class="prod-header">
+          <div>
+            <div class="prod-name" id="view-name-${p.id}">${p.name}</div>
+            <div class="prod-meta">
+              ${p.brand ? `<strong>${p.brand}</strong> · ` : ''}
+              Category: <strong>${catLabel}</strong>
+              ${p.districtName ? ` · Submitted by: <strong>${p.districtName}</strong>` : ''}
+              ${p.added_by ? ` (${p.added_by})` : ''}
+              ${submitted ? ` · ${submitted}` : ''}
+            </div>
+          </div>
+          <span class="badge badge-pending">Pending</span>
+        </div>
+        ${p.desc ? `<div class="prod-desc" id="view-desc-${p.id}">${p.desc}</div>` : `<div class="prod-desc" id="view-desc-${p.id}" style="color:var(--text-tertiary);font-style:italic">No description provided</div>`}
+        <div class="tag-row" id="view-tags-${p.id}">${tagHtml}</div>
+      </div>
+
+      <!-- Edit panel -->
+      <div class="edit-panel" id="edit-panel-${p.id}">
+        <div style="font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--text-tertiary);margin-bottom:12px">Edit before approving</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div class="edit-field">
+            <label>Product name</label>
+            <input type="text" id="edit-name-${p.id}" value="${p.name.replace(/"/g,'&quot;')}">
+          </div>
+          <div class="edit-field">
+            <label>Brand</label>
+            <input type="text" id="edit-brand-${p.id}" value="${(p.brand||'').replace(/"/g,'&quot;')}">
+          </div>
+        </div>
+        <div class="edit-field" style="margin-bottom:12px">
+          <label>Description</label>
+          <textarea id="edit-desc-${p.id}" style="min-height:60px">${p.desc||''}</textarea>
+        </div>
+        <div class="edit-field">
+          <label>Feature tags — click to toggle</label>
+          <div style="margin-top:6px" id="edit-tags-${p.id}">${tagPicker}</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn-save-edit" onclick="saveEdit('${p.id}')">Save changes</button>
+          <button class="btn-edit" onclick="toggleEdit('${p.id}')">Cancel</button>
+          <span id="edit-msg-${p.id}" style="font-size:13px;color:var(--text-secondary);padding:7px 0"></span>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button class="btn-approve" onclick="approveWithEdits('${p.id}')">
+          <i class="ti ti-check" style="font-size:13px;margin-right:4px"></i>Approve &amp; add to library
+        </button>
+        <button class="btn-edit" onclick="toggleEdit('${p.id}')">
+          <i class="ti ti-pencil" style="font-size:13px;margin-right:4px"></i>Edit
+        </button>
+        <button class="btn-reject" onclick="reject('${p.id}')">
+          <i class="ti ti-x" style="font-size:13px;margin-right:4px"></i>Reject
+        </button>
+        <span class="action-msg" id="action-msg-${p.id}"></span>
+      </div>
+    </div>`;
+}
+
+function toggleEdit(id) {
+  const panel = document.getElementById('edit-panel-' + id);
+  panel.classList.toggle('open');
+}
+
+function toggleEditTag(id, tag, el) {
+  el.classList.toggle('selected');
+  const state = editState[id];
+  if (!state) return;
+  if (el.classList.contains('selected')) {
+    if (!state.tags.includes(tag)) state.tags.push(tag);
+  } else {
+    state.tags = state.tags.filter(t => t !== tag);
+  }
+}
+
+function saveEdit(id) {
+  const name  = document.getElementById('edit-name-' + id).value.trim();
+  const brand = document.getElementById('edit-brand-' + id).value.trim();
+  const desc  = document.getElementById('edit-desc-' + id).value.trim();
+  const msg   = document.getElementById('edit-msg-' + id);
+
+  if (!name) { msg.style.color='var(--red)'; msg.textContent='Name is required.'; return; }
+
+  editState[id].name  = name;
+  editState[id].brand = brand;
+  editState[id].desc  = desc;
+
+  // Update view
+  document.getElementById('view-name-' + id).textContent = name;
+  document.getElementById('view-desc-' + id).textContent = desc || 'No description provided';
+  const tags = editState[id].tags;
+  document.getElementById('view-tags-' + id).innerHTML = tags.length
+    ? tags.map(t => `<span class="tag">${t}</span>`).join('')
+    : '<span style="color:var(--text-tertiary);font-size:12px">No tags selected</span>';
+
+  msg.style.color = 'var(--green)';
+  msg.textContent = '✓ Changes saved locally — click Approve to add to library.';
+  setTimeout(() => { document.getElementById('edit-panel-' + id).classList.remove('open'); }, 1200);
+}
+
+// ── Approve with edits ────────────────────────────────────────
+async function approveWithEdits(id) {
+  const msg  = document.getElementById('action-msg-' + id);
+  const state = editState[id] || {};
+  msg.textContent = 'Approving…';
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action:    'approvePending',
+        id,
+        editedName:  state.name,
+        editedBrand: state.brand,
+        editedDesc:  state.desc,
+        editedTags:  state.tags
+      })
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+    const card = document.getElementById('card-' + id);
+    card.style.opacity = '.5';
+    card.style.pointerEvents = 'none';
+    card.querySelector('.badge').className = 'badge badge-approved';
+    card.querySelector('.badge').textContent = 'Approved';
+    card.querySelector('.action-row').innerHTML = `<span style="font-size:13px;color:var(--green)">✓ Added to master library</span>`;
+    loadPending();
+  } catch(err) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Error: ' + err.message;
+  }
+}
+
+// ── Reject ────────────────────────────────────────────────────
+async function reject(id) {
+  if (!confirm('Reject this submission? It will be marked as rejected and removed from the queue.')) return;
+  const msg = document.getElementById('action-msg-' + id);
+  msg.textContent = 'Rejecting…';
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'rejectPending', id })
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+    const card = document.getElementById('card-' + id);
+    card.style.opacity = '.4';
+    card.style.pointerEvents = 'none';
+    card.querySelector('.badge').className = 'badge badge-rejected';
+    card.querySelector('.badge').textContent = 'Rejected';
+    card.querySelector('.action-row').innerHTML = `<span style="font-size:13px;color:var(--text-tertiary)">Submission rejected.</span>`;
+    loadPending();
+  } catch(err) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Error: ' + err.message;
+  }
+}
+
+// ── Load master library ───────────────────────────────────────
+async function loadMaster() {
+  const el = document.getElementById('master-list');
+  el.innerHTML = '<div class="loading">Loading master library…</div>';
+
+  if (APPS_SCRIPT_URL === 'YOUR_MASTER_APPS_SCRIPT_URL_HERE') {
+    el.innerHTML = '<div class="empty-state">⚙ Apps Script URL not configured yet.</div>';
+    return;
+  }
+
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL + '?action=getMasterLibrary');
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+
+    if (!json.products.length) {
+      el.innerHTML = '<div class="empty-state">The master library is empty. Approved submissions will appear here.</div>';
+      return;
+    }
+
+    // Group by category
+    const grouped = {};
+    json.products.forEach(p => {
+      const cat = CATEGORY_LABELS[p.type] || p.type || 'Other';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(p);
+    });
+
+    el.innerHTML = Object.entries(grouped).map(([cat, prods]) => `
+      <div style="margin-bottom:1.5rem">
+        <div style="font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--text-tertiary);margin-bottom:8px">${cat} — ${prods.length} product${prods.length!==1?'s':''}</div>
+        <div class="card" style="overflow:hidden">
+          ${prods.map((p, i) => `
+            <div class="master-item">
+              <div>
+                <div class="name">${p.name}</div>
+                <div class="meta">${p.brand || ''}${p.submitted_by_district ? ` · from ${p.submitted_by_district}` : ''}${p.approvedAt ? ` · approved ${new Date(p.approvedAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}` : ''}</div>
+              </div>
+              <button class="btn-remove" onclick="removeMasterItem('${p.name}','${p.type}',this)">Remove</button>
+            </div>`).join('')}
+        </div>
+      </div>`).join('');
+  } catch(err) {
+    el.innerHTML = `<div class="empty-state" style="color:var(--red)">⚠ Could not load master library: ${err.message}</div>`;
+  }
+}
+
+async function removeMasterItem(name, type, btn) {
+  if (!confirm(`Remove "${name}" from the master library? It will no longer appear in the tool for any district.`)) return;
+  btn.textContent = 'Removing…';
+  btn.disabled    = true;
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'removeMasterItem', name, type })
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+    loadMaster();
+  } catch(err) {
+    btn.textContent = 'Error';
+    alert('Could not remove: ' + err.message);
+  }
+}
+
+// Auto-load if already authenticated
+if (sessionStorage.getItem('adminAuth') === '1') {
+  loadPending();
+}
+</script>
+</body>
+</html>
