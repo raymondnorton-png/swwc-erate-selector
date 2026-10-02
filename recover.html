@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Get your login — SWWC E-Rate Equipment Selector</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --field: #e9efe6;     /* pale prairie */
+    --ink: #1d2b24;
+    --muted: #55655c;
+    --accent: #1f5f4a;    /* deep green */
+    --accent-dark: #164636;
+    --line: #c9d4c4;
+    --ok-bg: #e3f1e8; --ok-ink: #17543c;
+    --err-bg: #fbeaea; --err-ink: #8a2323;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: "Source Sans 3", "Segoe UI", Arial, sans-serif;
+    color: var(--ink); background: var(--field);
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  main {
+    width: 100%; max-width: 440px; background: #fff;
+    border-top: 6px solid var(--accent); border-radius: 6px;
+    padding: 32px 28px 28px;
+  }
+  h1 { font-size: 1.6rem; line-height: 1.2; margin: 0 0 8px; }
+  p.lead { margin: 0 0 24px; color: var(--muted); line-height: 1.5; }
+  label { display: block; font-weight: 600; margin-bottom: 6px; }
+  .hint { font-size: .9rem; color: var(--muted); margin: 6px 0 20px; }
+  input {
+    width: 100%; font: inherit; font-size: 1.15rem; padding: 12px 14px;
+    border: 1.5px solid var(--line); border-radius: 4px;
+  }
+  input:focus { outline: 3px solid #9cc7b3; border-color: var(--accent); }
+  button {
+    width: 100%; font: inherit; font-weight: 700; font-size: 1.05rem;
+    padding: 12px; border: 0; border-radius: 4px; cursor: pointer;
+    background: var(--accent); color: #fff;
+  }
+  button:hover { background: var(--accent-dark); }
+  button:focus-visible { outline: 3px solid #9cc7b3; outline-offset: 2px; }
+  button:disabled { opacity: .6; cursor: wait; }
+  #result { margin-top: 20px; padding: 12px 14px; border-radius: 4px; line-height: 1.45; display: none; }
+  #result.ok { display: block; background: var(--ok-bg); color: var(--ok-ink); }
+  #result.err { display: block; background: var(--err-bg); color: var(--err-ink); }
+  .help { margin: 20px 0 0; font-size: .95rem; line-height: 1.5; color: var(--muted); }
+  .help a { color: var(--accent); }
+  footer { margin-top: 24px; font-size: .9rem; color: var(--muted); }
+  footer a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Get your login</h1>
+  <p class="lead">Enter your ISD number and your school district email, and we'll email you your login.</p>
+
+  <div>
+    <label for="code">ISD number</label>
+    <input id="code" inputmode="numeric" autocomplete="off" placeholder="2904" aria-describedby="hint">
+    <p class="hint" id="hint">Numbers only, for example 2904.</p>
+
+    <label for="email">School district email</label>
+    <input id="email" type="email" autocomplete="email" placeholder="name@district.k12.mn.us" style="margin-bottom:20px">
+    <button id="send" type="button">Email my login</button>
+  </div>
+
+  <div id="result" role="status" aria-live="polite"></div>
+
+  <p class="help">Didn't get your login within a few minutes? Check your spam folder or email <a href="mailto:raymond.norton@swwc.org?subject=E-Rate%20Equipment%20Selector%20login">raymond.norton@swwc.org</a> with your ISD number.</p>
+
+  <footer>
+    <a href="./">Back to sign in</a> &nbsp;|&nbsp; Questions? <a href="mailto:raymond.norton@swwc.org">raymond.norton@swwc.org</a>
+  </footer>
+</main>
+
+<script>
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz_TB_qygzSjqsb5iqGGW5sO4y71Pch50Kg7-NqV79D4I0xjsKDRitafQrhpIp7epDl/exec';
+
+  const input = document.getElementById('code');
+  const emailInput = document.getElementById('email');
+  const btn = document.getElementById('send');
+  const result = document.getElementById('result');
+
+  function show(ok, msg) {
+    result.className = ok ? 'ok' : 'err';
+    result.textContent = msg;
+  }
+
+  async function send() {
+    const code = input.value.trim();
+    const email = emailInput.value.trim();
+    if (!/\d/.test(code)) { show(false, 'Enter your ISD number, for example 2904.'); input.focus(); return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { show(false, 'Enter your school district email address.'); emailInput.focus(); return; }
+    btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'recoverCredentials', code, email })
+      });
+      const data = await res.json();
+      show(!!data.ok, data.message || 'Something went wrong. Email raymond.norton@swwc.org for your login.');
+    } catch (e) {
+      show(false, 'The request didn\'t go through. Check your connection and try again, or email raymond.norton@swwc.org.');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Email my login';
+    }
+  }
+
+  btn.addEventListener('click', send);
+  [input, emailInput].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') send(); }));
+</script>
+</body>
+</html>
