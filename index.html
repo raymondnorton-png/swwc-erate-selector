@@ -1492,6 +1492,7 @@ loadDistrictList();
 
 function launchApp(isNew) {
   savedWorkPromise = fetchSavedWork();   // load saved work from the district's sheet in the background
+  resetContactForm();                    // start each sign-in with a fresh, clickable contact form
   document.getElementById('district-screen').style.display = 'none';
   document.getElementById('main-header').style.display = 'flex';
   document.getElementById('district-badge-name').textContent = districtName;
@@ -1507,6 +1508,21 @@ function launchApp(isNew) {
     document.getElementById('main-app').style.display = 'none';
     fetchAndPopulateContacts();
   }
+}
+
+// Clears the contact form and re-enables its button. Without this, signing in a
+// second time without reloading left the button disabled from the previous save
+// (and showed the previous district's contacts).
+function resetContactForm() {
+  ['epc-name','epc-title','epc-phone','epc-email','tech-name','tech-title','tech-phone','tech-email',
+   'super-name','super-phone','super-email','other-contacts'].forEach(f => {
+    const el = document.getElementById('ci-' + f);
+    if (el) el.value = '';
+  });
+  const btn = document.getElementById('contact-submit-btn');
+  if (btn) { btn.disabled = false; btn.textContent = 'Save & continue →'; }
+  const msg = document.getElementById('contact-msg');
+  if (msg) msg.textContent = '';
 }
 
 async function fetchAndPopulateContacts() {
