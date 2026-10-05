@@ -62,8 +62,8 @@
 
   <div>
     <label for="code">ISD number</label>
-    <input id="code" inputmode="numeric" autocomplete="off" placeholder="2904" aria-describedby="hint">
-    <p class="hint" id="hint">Numbers only, for example 2904.</p>
+    <input id="code" inputmode="text" autocomplete="off" placeholder="2904" aria-describedby="hint">
+    <p class="hint" id="hint">For example 2904. Private and charter schools: use the code SWWC sent you, such as PRV-STMARYS.</p>
 
     <label for="email">School district email</label>
     <input id="email" type="email" autocomplete="email" placeholder="name@district.k12.mn.us" style="margin-bottom:20px">
@@ -95,7 +95,7 @@
   async function send() {
     const code = input.value.trim();
     const email = emailInput.value.trim();
-    if (!/\d/.test(code)) { show(false, 'Enter your ISD number, for example 2904.'); input.focus(); return; }
+    if (!code) { show(false, 'Enter your ISD number, for example 2904.'); input.focus(); return; }
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { show(false, 'Enter your school district email address.'); emailInput.focus(); return; }
     btn.disabled = true; btn.textContent = 'Sending…';
     try {
