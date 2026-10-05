@@ -1731,7 +1731,7 @@ async function fetchSharedLibrary() {
       if (!DATA[p.type]) return;
       const prod = {
         name:     p.name,
-        brand:    p.brand || 'Custom',
+        brand:    normalizeBrand(p.brand) || 'Custom',
         desc:     p.desc || '',
         tags:     Array.isArray(p.tags) ? p.tags : [],
         specs:    {},
@@ -1783,7 +1783,7 @@ async function fetchMasterLibrary() {
       if (!exists) {
         DATA[p.type].products.push({
           name:     p.name,
-          brand:    p.brand || '',
+          brand:    normalizeBrand(p.brand),
           desc:     p.desc  || '',
           tags:     Array.isArray(p.tags) ? p.tags : [],
           specs:    {},
@@ -2200,6 +2200,18 @@ async function saveSelectionToSheet({ type, name, brand, qty }) {
   // Stub — overridden below with location + installation support
 }
 
+// ── Manufacturer names ────────────────────────────────────────
+// Different spellings of the same manufacturer are shown under one name.
+const BRAND_ALIASES = {
+  'extreme': 'Extreme Networks',
+  'extreme networks': 'Extreme Networks',
+  'extremenetworks': 'Extreme Networks'
+};
+function normalizeBrand(b) {
+  const key = String(b || '').trim().toLowerCase();
+  return BRAND_ALIASES[key] || String(b || '').trim();
+}
+
 // ── Browse by manufacturer ────────────────────────────────────
 function switchView(type, view) {
   const featView   = document.getElementById(type + '-view-features');
@@ -2226,7 +2238,7 @@ function switchView(type, view) {
 function populateMfrDropdown(type) {
   const sel = document.getElementById(type + '-mfr-select');
   if (!sel || sel.options.length > 1) return; // already populated
-  const brands = [...new Set(DATA[type].products.map(p => p.brand))].sort();
+  const brands = [...new Set(DATA[type].products.map(p => normalizeBrand(p.brand)))].sort();
   brands.forEach(b => {
     const opt = document.createElement('option');
     opt.value = b; opt.textContent = b;
@@ -2238,7 +2250,7 @@ function renderBrowse(type) {
   const sel      = document.getElementById(type + '-mfr-select');
   const list     = document.getElementById(type + '-browse-list');
   const brand    = sel ? sel.value : '';
-  const products = DATA[type].products.filter(p => !brand || p.brand === brand);
+  const products = DATA[type].products.filter(p => !brand || normalizeBrand(p.brand) === brand);
 
   if (!products.length) {
     list.innerHTML = '<div class="empty-state">No products found for this manufacturer.</div>';
@@ -2255,7 +2267,7 @@ function renderBrowse(type) {
         <div class="browse-item-header" onclick="toggleBrowseItem('${cardId}')">
           <div>
             <div class="browse-item-name">${p.name}</div>
-            <div class="browse-item-brand">${p.brand}</div>
+            <div class="browse-item-brand">${normalizeBrand(p.brand)}</div>
           </div>
           <i class="ti ti-chevron-down" id="${cardId}-chevron" style="font-size:16px;color:var(--text-tertiary);transition:transform .2s"></i>
         </div>
