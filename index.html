@@ -1491,6 +1491,7 @@ async function connectDistrict() {
 loadDistrictList();
 
 function launchApp(isNew) {
+  savedWorkPromise = fetchSavedWork();   // load saved work from the district's sheet in the background
   document.getElementById('district-screen').style.display = 'none';
   document.getElementById('main-header').style.display = 'flex';
   document.getElementById('district-badge-name').textContent = districtName;
@@ -1629,7 +1630,6 @@ async function submitContactInfo() {
       document.getElementById('contact-screen').style.display = 'none';
       document.getElementById('cat1-prompt-screen').style.display = 'flex';
       fetchSharedLibrary();
-      if (!isNew) restoreFromCache();
     }, 600);
   } catch(e) {
     // Even if sheet save fails, let them proceed
@@ -1660,9 +1660,14 @@ async function saveContactInfoToSheet(contactData) {
 }
 
 function changeDistrict() {
+  clearCache();                       // clear this browser's copy (work stays safe in the sheet)
   districtName    = '';
   districtSheetId = '';
-  clearCache();
+  savedWorkPromise = null;
+  // Forget the previous district's selections and summary cards
+  Object.keys(selections).forEach(t => { selections[t] = []; renderSummaryTop(t); });
+  const banner = document.getElementById('restore-banner');
+  if (banner) banner.remove();
   // Reset custom products
   ALL_TYPES.filter(t => DATA[t]).forEach(type => {
     customProducts[type] = [];
@@ -1675,12 +1680,15 @@ function changeDistrict() {
   document.getElementById('cat1-prompt-screen').style.display = 'none';
   document.getElementById('main-header').style.display = 'none';
   document.getElementById('main-app').style.display = 'none';
-  document.getElementById('district-input').value = '';
+  const search = document.getElementById('district-search');
+  if (search) search.value = '';
+  const pw = document.getElementById('district-password');
+  if (pw) pw.value = '';
+  if (typeof clearDistrictSelection === 'function') clearDistrictSelection();
   const msg = document.getElementById('district-msg');
-  msg.textContent = '';
+  if (msg) msg.textContent = '';
   const btn = document.getElementById('district-btn');
-  btn.disabled = false;
-  btn.textContent = 'Connect to library';
+  if (btn) { btn.disabled = true; btn.textContent = 'Sign in'; }
 }
 
 // ── Fetch district products from Sheet ───────────────────────
@@ -2263,6 +2271,85 @@ function toggleBrowseItem(cardId) {
 // Refresh browse view when master library loads new products
 const origFetchMasterLibrary = fetchMasterLibrary;
 
+// ── Saved work from the district's Google Sheet ───────────────
+// The sheet is the source of truth; the browser copy (cache) is only a backup
+// for when the sheet can't be reached. This makes a district's work appear on
+// any computer or browser they log in from.
+let savedWorkPromise = null;
+
+function fetchSavedWork() {
+  if (APPS_SCRIPT_URL === 'YOUR_MASTER_APPS_SCRIPT_URL_HERE' || !districtSheetId || districtSheetId === 'demo') {
+    return Promise.resolve(null);
+  }
+  return fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action: 'getSavedWork', sheetId: districtSheetId, districtName })
+  })
+    .then(r => r.json())
+    .then(j => (j && j.ok ? j : null))
+    .catch(() => null);
+}
+
+const TYPE_BY_SHEET_LABEL = {
+  'Wireless APs': 'ap', 'Switches': 'sw', 'Firewall': 'fw',
+  'UPS': 'ups', 'Licensing': 'lic', 'Racks & Components': 'acc'
+};
+
+async function restoreSavedWork() {
+  const sheet = savedWorkPromise ? await savedWorkPromise : null;
+
+  if (sheet) {
+    const cache = readCache() || {};
+    const sels = {}, locations = {}, installation = {};
+    let latest = 0;
+
+    (sheet.selections || []).forEach(r => {
+      const type = TYPE_BY_SHEET_LABEL[r.category] || r.category;
+      if (!ALL_TYPES.includes(type)) return;
+      const item = {
+        name:     String(r.product_name || ''),
+        brand:    String(r.brand || ''),
+        qty:      Number(r.quantity) || 1,
+        location: String(r.location || '')
+      };
+      if (!item.name) return;
+      sels[type] = sels[type] || [];
+      const i = sels[type].findIndex(s => s.name === item.name && s.location === item.location);
+      if (i >= 0) sels[type][i] = item; else sels[type].push(item);   // later rows win
+      if (item.location)  locations[type]    = item.location;
+      if (r.installation) installation[type] = String(r.installation);
+      const t = Date.parse(r.selected_at);
+      if (!isNaN(t) && t > latest) latest = t;
+    });
+
+    // Category 1 is saved as "Option 2: …" — turn it back into the radio value "option2"
+    const m = /^Option\s*(\d)/i.exec(sheet.cat1 || '');
+    const cat1 = m ? 'option' + m[1] : cache.cat1;
+
+    const rfp = sheet.rfp && (sheet.rfp.assistance || sheet.rfp.review || sheet.rfp.description)
+      ? sheet.rfp : cache.rfp;
+
+    writeCache({
+      selections:   sels,                                              // sheet is the truth
+      locations:    Object.assign({}, locations, cache.locations || {}),   // keep anything typed locally
+      installation: Object.assign({}, installation, cache.installation || {}),
+      cat1,
+      rfp
+    });
+
+    // Show the real last-saved time in the "restored" banner
+    if (latest) {
+      try {
+        const c = readCache();
+        c._savedAt = latest;
+        localStorage.setItem(cacheKey(), JSON.stringify(c));
+      } catch (e) {}
+    }
+  }
+
+  restoreFromCache();
+}
+
 // ── Cache system ──────────────────────────────────────────────
 // Keyed by districtName + FISCAL_YEAR so it auto-invalidates when year changes
 
@@ -2549,8 +2636,8 @@ function handleCat1Choice(needed) {
     document.getElementById('tab-cat1').style.display = 'none';
     switchTab('ap');
   }
-  // Restore cached UI state now that hardware tabs are visible
-  restoreFromCache();
+  // Restore saved work (sheet first, browser copy as backup) now that tabs are visible
+  restoreSavedWork();
 }
 
 async function saveCat1AndContinue() {
